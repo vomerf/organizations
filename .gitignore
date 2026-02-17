@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Poetry
+.venv/
+
+# Env
+.env
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Alembic cache
+alembic/versions/__pycache__/
+
+.pytest_cache
