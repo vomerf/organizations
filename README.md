@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-Описание API
-=======
 # Organizations API (FastAPI)
 
 Test project with:
@@ -52,4 +49,4 @@ alembic upgrade head
 * SQLAlchemy 2.0
 * Alembic
 * Docker / Docker Compose
->>>>>>> b87f3fa (add docker file)
+
