@@ -7,31 +7,23 @@ from sqlalchemy.orm import selectinload
 
 from app.config.database import get_session
 from app.models import Activity, Building, Organization, OrganizationPhone
+from app.repositories.organization import OrganizationRepo
 from app.schemas.organization import OrganizationActivityOut, OrganizationOut
 
 router = APIRouter(tags=['Organization'])
 
-# Вынести запросы к БД в отдельный слой!!!
 
 @router.get("/organizations/by_building/{building_id}", response_model=list[OrganizationOut])
 async def get_organizations_by_building(building_id: int, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(
-            Organization.name.label('name'),
-            func.array_agg(OrganizationPhone.phone).label('phones')
-        )
-        .join(Organization.phones)
-        .where(Organization.building_id == building_id)
-        .group_by(Organization.id, Organization.name)
-    )
-    organizations = result.all()
+    repo = OrganizationRepo(session)
+    orgs = await repo.get_data_by_build_id(building_id)
 
-    if not organizations:
+    if not orgs:
         raise HTTPException(status_code=404, detail="В здании нету организаций")
 
     return [
         OrganizationOut(name=org_name, phones=org_phones) 
-        for org_name, org_phones in organizations
+        for org_name, org_phones in orgs
     ]
 
 
@@ -43,64 +35,28 @@ async def organizations_by_activity(
     activity_id: int,
     session: AsyncSession = Depends(get_session)
 ):
-    # летит два запроса в БД
-    result = await session.execute(
-        select(
-            Organization.name,
-            func.array_agg(OrganizationPhone.phone).label("phones") 
-        )
-        .join(Organization.activities)
-        .join(Organization.phones) 
-        .where(Activity.id == activity_id)
-        .group_by(Organization.id, Organization.name)
-    )
+    repo = OrganizationRepo(session)
+    orgs = await repo.get_data_by_activity_id(activity_id)
 
-    result = result.all()
-
-    if not result:
+    if not orgs:
         raise HTTPException(status_code=404, detail="Для данной деятельности не нашлось ни одной организации")
 
     return [
         OrganizationOut(name=org_name, phones=org_phones) 
-        for org_name, org_phones in result
+        for org_name, org_phones in orgs
     ]
 
 @router.get("/organizations_by_nested_activity", response_model=list[OrganizationActivityOut])
 async def get_organizations_by_nested_activity(activity_id: int, session: AsyncSession = Depends(get_session)):
-    activity_cte = (
-        select(Activity.id)
-        .where(Activity.id == activity_id)
-        .cte(recursive=True)
-    )
-
-    activity_alias = Activity.__table__.alias()
-    activity_cte = activity_cte.union_all(
-        select(activity_alias.c.id)
-        .where(activity_alias.c.parent_id == activity_cte.c.id)
-    )
-
-    query = (
-        select(
-            Organization.name.label('organization_name'),
-            Activity.name.label('activity_name'),
-            func.array_agg(OrganizationPhone.phone).label("phone"),
-        )
-        .join(Organization.activities)
-        .join(Organization.phones)
-        .where(Activity.id.in_(select(activity_cte.c.id)))
-        .group_by(Organization.id, Organization.name, Activity.name)
-    )
-
-    result = await session.execute(query)
-    rows = result.mappings().all()
-
+    repo = OrganizationRepo(session)
+    orgs = await repo.organizations_by_nested_activity(activity_id)
     return [
         OrganizationActivityOut(
             organization=row["organization_name"],
             activity=row["activity_name"],
             phones=row.get('phone', None)
         )
-        for row in rows
+        for row in orgs
     ]
 
 
@@ -109,48 +65,27 @@ async def get_organization_by_id(
     organization_id: int,
     session: AsyncSession = Depends(get_session)
 ):
-    result = await session.execute(
-        select(
-            Organization.name.label('name'),
-            func.array_agg(OrganizationPhone.phone).label('phones')
-        )
-        .join(Organization.phones)
-        .where(Organization.id == organization_id)
-        .group_by(Organization.id, Organization.name)
-    )
-    org = result.all()[0]
+    repo = OrganizationRepo(session)
+    org = await repo.get_organization_by_id(organization_id)
     
     if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+        raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    return OrganizationOut(name=org[0], phones=org[1])
+    return OrganizationOut(name=org['name'], phones=org['phones'])
 
 
-@router.get("/organization_by_name", response_model=list[OrganizationOut])
+@router.get("/organization_by_name", response_model=OrganizationOut)
 async def get_organization_by_name(
     organization_name: str,
     session: AsyncSession = Depends(get_session)
 ):
-    result = await session.execute(
-        select(
-            Organization.name.label('name'),
-            func.array_agg(OrganizationPhone.phone).label('phones')
-        )
-        .join(Organization.phones)
-        .where(Organization.name == organization_name)
-        .group_by(Organization.id, Organization.name)
-    )
-
-    result = result.all()
+    repo = OrganizationRepo(session)
+    org = await repo.get_organization_by_name(organization_name)
     
-    if not result:
+    if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    return [
-        OrganizationOut(name=org_name, phones=org_phones) 
-        for org_name, org_phones in result
-    ]
-
+    return OrganizationOut(name=org['name'], phones=org['phones']) 
 
 
 @router.get("/organizations/nearby", response_model=list[OrganizationOut])

@@ -1,7 +1,9 @@
-from app.config.database import Base
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Generic, Type, TypeVar, Any
+
 from sqlalchemy import select
-from typing import Generic, TypeVar, Type
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -22,12 +24,7 @@ class BaseRepo(Generic[ModelType]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_data_by_name(self, name: str):
-        stmt = select(self.model_class).where(self.model_class.name == name)
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
-
-    async def get_data_by_params(self, **params: dict):
+    async def get_data_by_params(self, **params: Any):
         stmt = select(self.model_class)
 
         for field, value in params.items():
@@ -40,7 +37,7 @@ class BaseRepo(Generic[ModelType]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def create(self, **data: dict):
+    async def create(self, **data: Any):
         obj = self.model_class(**data)
         self.session.add(obj)
         await self.session.flush()
@@ -48,3 +45,5 @@ class BaseRepo(Generic[ModelType]):
     
     async def delete(self, obj):
         await self.session.delete(obj)
+        await self.session.flush()
+        return obj
