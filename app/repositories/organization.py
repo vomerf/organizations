@@ -1,8 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
-from app.models import Activity, Organization, OrganizationPhone
+from app.models import Activity, Organization, OrganizationPhone, Building
 from app.repositories.base import BaseRepo
-
+from app.config.settings import settings
 
 class OrganizationRepo(BaseRepo[Organization]):
     model_class = Organization
@@ -85,3 +85,27 @@ class OrganizationRepo(BaseRepo[Organization]):
 
         result = await self.session.execute(stmt)
         return result.mappings().all()
+
+
+    async def get_organizations_nearby(
+        self,
+        point_geog,
+        building_point_geog,
+        radius_m=settings.DEFAULT_RADIUS
+    ):
+        result = await self.session.execute(
+                select(
+                    Organization.name.label("name"),
+                    func.array_agg(OrganizationPhone.phone).label("phones"),
+                )
+                .join(Organization.building)
+                .join(Organization.phones)
+                .where(
+                    Building.latitude.is_not(None),
+                    Building.longitude.is_not(None),
+                    func.ST_DWithin(building_point_geog, point_geog, radius_m),
+                )
+                .group_by(Organization.id, Organization.name)
+            )
+        await self.session.execute(text('select 10'))
+        return result.all()
