@@ -18,5 +18,8 @@ class Base(AsyncAttrs, DeclarativeBase):
 async def get_session():
     '''Получение сессии в запросе, нужно явно делать commit'''
     async with async_session() as session:
-        yield session
-        await session.commit()
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()

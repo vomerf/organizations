@@ -3,10 +3,11 @@ import math
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+
 
 from app.config.database import get_session
-from app.models import Activity, Building, Organization, OrganizationPhone
+from app.config.settings import settings
+from app.models import Building, Organization, OrganizationPhone
 from app.repositories.organization import OrganizationRepo
 from app.schemas.organization import OrganizationActivityOut, OrganizationOut
 
@@ -76,7 +77,7 @@ async def get_organization_by_id(
 
 @router.get("/organization_by_name", response_model=OrganizationOut)
 async def get_organization_by_name(
-    organization_name: str,
+    organization_name: str = Query(..., description="Название организации"),
     session: AsyncSession = Depends(get_session)
 ):
     repo = OrganizationRepo(session)
@@ -92,39 +93,20 @@ async def get_organization_by_name(
 async def get_organizations_nearby(
     lat: float = Query(..., description="Широта центра поиска"),
     lon: float = Query(..., description="Долгота центра поиска"),
-    radius_km: float = Query(5.0, description="Радиус поиска в километрах"),
+    radius_m: float = Query(settings.DEFAULT_RADIUS, gt=0, description="Радиус поиска в метрах"),
     session: AsyncSession = Depends(get_session)
 ):
-    """
-    Получить список организаций в заданном радиусе (km) от точки (lat, lon).
+
+    point = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+    point_geog = func.geography(point)
+
+    building_point_geog = func.geography(
+        func.ST_SetSRID(func.ST_MakePoint(Building.longitude, Building.latitude), 4326)
+    )
+    repo = OrganizationRepo(session)
+    orgs = await repo.get_organizations_nearby(point_geog, building_point_geog, radius_m)
+    if not orgs:
+        raise HTTPException(status_code=404, detail="В радиусе {radius_m}м нет ни одной организации")
     
-    Для больших данных рекомендуется использовать PostGIS и гео-индексы,
-    тогда поиск будет гораздо быстрее и точнее.
-    """
-    # Перевод центра в радианы
-    lat0_rad = math.radians(lat)
-    lon0_rad = math.radians(lon)
-    R = 6371  # радиус Земли в км
+    return [OrganizationOut(name=name, phones=phones) for name, phones in orgs]
 
-    # SQLAlchemy выражение Хаверсина
-    distance_expr = (
-        R * 2 * func.asin(
-            func.sqrt(
-                func.pow(func.sin((func.radians(Building.latitude) - lat0_rad) / 2), 2) +
-                func.cos(lat0_rad) *
-                func.cos(func.radians(Building.latitude)) *
-                func.pow(func.sin((func.radians(Building.longitude) - lon0_rad) / 2), 2)
-            )
-        )
-    )
-
-    result = await session.execute(
-        select(Building).options(selectinload(Building.organizations)).where(distance_expr <= radius_km)
-    )
-    buildings = result.scalars().all()
-
-    organizations = []
-    for building in buildings:
-        organizations.extend(building.organizations)
-
-    return organizations

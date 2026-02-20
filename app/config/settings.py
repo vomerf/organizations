@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         env_file='.env',
         env_file_encoding="utf-8"
     )
+    DEFAULT_RADIUS: float = 1000.0
 
     @property
     def database_url(self):
