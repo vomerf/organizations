@@ -8,7 +8,7 @@ class OrganizationRepo(BaseRepo[Organization]):
     model_class = Organization
 
 
-    async def get_organization_by_id(self, org_id: int):
+    async def get_organization_by_id_db(self, org_id: int):
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
@@ -20,7 +20,7 @@ class OrganizationRepo(BaseRepo[Organization]):
         )
         return result.mappings().one_or_none()
 
-    async def get_organization_by_name(self, name: str):
+    async def get_organization_by_name_db(self, name: str):
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
@@ -32,7 +32,7 @@ class OrganizationRepo(BaseRepo[Organization]):
         )
         return result.mappings().one_or_none()
 
-    async def get_data_by_build_id(self, building_id: int):
+    async def get_data_by_build_id_db(self, building_id: int):
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
@@ -44,7 +44,7 @@ class OrganizationRepo(BaseRepo[Organization]):
         )
         return result.all()
     
-    async def get_data_by_activity_id(self, activity_id: int):
+    async def get_data_by_activity_id_db(self, activity_id: int):
         result = await self.session.execute(
             select(
                 self.model_class.name,
@@ -58,7 +58,7 @@ class OrganizationRepo(BaseRepo[Organization]):
 
         return result.all()
     
-    async def organizations_by_nested_activity(self, activity_id):
+    async def organizations_by_nested_activity_db(self, activity_id):
         activity_cte = (
             select(Activity.id)
             .where(Activity.id == activity_id)
@@ -87,7 +87,7 @@ class OrganizationRepo(BaseRepo[Organization]):
         return result.mappings().all()
 
 
-    async def get_organizations_nearby(
+    async def get_organizations_nearby_db(
         self,
         point_geog,
         building_point_geog,
@@ -107,5 +107,4 @@ class OrganizationRepo(BaseRepo[Organization]):
                 )
                 .group_by(Organization.id, Organization.name)
             )
-        await self.session.execute(text('select 10'))
         return result.all()
