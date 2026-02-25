@@ -28,7 +28,7 @@ cp .env.example .env
 3. Собрать образы:
 
 ```bash
-docker compose build
+docker compose build --no-cache
 ```
 
 4. Запустить контейнеры:
