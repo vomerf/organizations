@@ -1,52 +1,84 @@
 # Organizations API (FastAPI)
 
-Test project with:
+Тестовый API-сервис на FastAPI с PostgreSQL/PostGIS, Alembic и Docker.
 
-* FastAPI
-* PostgreSQL
-* SQLAlchemy (async)
-* Alembic
-* Docker
+## Стек
 
-## Run with Docker
+- FastAPI
+- PostgreSQL + PostGIS
+- SQLAlchemy (async)
+- Alembic
+- Docker / Docker Compose
 
-1. Clone repository
+## Быстрый старт (Docker)
 
-```
+1. Клонировать репозиторий и перейти в проект:
+
+```bash
 git clone <repo_url>
-cd project
+cd <project_dir>
 ```
 
-2. Create environment file
+2. Создать `.env`:
 
-```
+```bash
 cp .env.example .env
 ```
 
-3. Run containers
+3. Собрать образы:
 
-```
-docker compose up --build
-```
-
-API will be available at:
-
-* http://localhost:8000
-* Swagger: http://localhost:8000/docs
-
-## Migrations
-
-Migrations are applied automatically on container start:
-
-```
-alembic upgrade head
+```bash
+docker compose build
 ```
 
-## Stack
+4. Запустить контейнеры:
 
-* FastAPI
-* PostgreSQL
-* SQLAlchemy 2.0
-* Alembic
-* Docker / Docker Compose
+```bash
+docker compose up -d
+```
 
+Приложение будет доступно:
+
+- API: http://localhost:8000
+- Swagger: http://localhost:8000/docs
+
+## Миграции в контейнере
+
+При старте `app` миграции выполняются автоматически (`alembic upgrade head`).
+
+Если нужно накатить миграции вручную:
+
+```bash
+docker compose exec app alembic upgrade head
+```
+
+Проверить текущую ревизию:
+
+```bash
+docker compose exec app alembic current
+```
+
+## Заполнение таблиц тестовыми данными после миграций
+
+После `alembic upgrade head` можно заполнить таблицы из `migration/seed_data.sql`:
+
+```bash
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < migration/seed_data.sql
+```
+
+Скрипт очищает таблицы (`TRUNCATE ... RESTART IDENTITY CASCADE`) и загружает тестовые данные заново.
+
+## Полезные команды
+
+Остановить контейнеры:
+
+```bash
+docker compose down
+```
+
+Пересоздать БД с нуля (удалит volume с данными):
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```

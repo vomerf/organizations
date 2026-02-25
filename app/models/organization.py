@@ -1,7 +1,7 @@
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config.database import Base
@@ -51,14 +51,15 @@ class OrganizationPhone(Base):
 
 class OrganizationActivity(Base):
     __tablename__ = "organization_activity"
+    __table_args__ = (UniqueConstraint("organization_id", "activity_id"),)
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     organization_id: Mapped[int] = mapped_column(
         ForeignKey("organization.id"),
-        primary_key=True
+        # primary_key=True
     )
     activity_id: Mapped[int] = mapped_column(
         ForeignKey("activity.id"),
-        primary_key=True
+        # primary_key=True
     )
     organization: Mapped["Organization"] = relationship(
         back_populates="organization_activities"
