@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.database import get_session
 from app.config.settings import settings
-from app.repositories.organization import OrganizationRepo
 from app.schemas.organization import OrganizationActivityOut, OrganizationOut
 from app.services.organization import OrganizationService
 

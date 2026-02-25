@@ -1,15 +1,9 @@
-import math
-
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
-from app.config.database import get_session
-from app.config.settings import settings
-from app.models import Building, Organization, OrganizationPhone
+from app.models import Building
 from app.repositories.organization import OrganizationRepo
-from app.schemas.organization import OrganizationActivityOut, OrganizationOut
+
 
 
 class OrganizationService:
