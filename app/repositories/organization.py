@@ -30,7 +30,7 @@ class OrganizationRepo(BaseRepo[Organization]):
             .where(self.model_class.name == name)
             .group_by(self.model_class.id, self.model_class.name)
         )
-        return result.mappings().one_or_none()
+        return result.mappings().all()
 
     async def get_data_by_build_id_db(self, building_id: int):
         result = await self.session.execute(
