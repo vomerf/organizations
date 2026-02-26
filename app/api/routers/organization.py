@@ -70,18 +70,18 @@ async def get_organization_by_id(
     return OrganizationOut(name=org['name'], phones=org['phones'])
 
 
-@router.get("/organization_by_name", response_model=OrganizationOut)
+@router.get("/organization_by_name", response_model=list[OrganizationOut])
 async def get_organization_by_name(
     organization_name: str = Query(..., description="Название организации"),
     session: AsyncSession = Depends(get_session)
 ):
     org_service = OrganizationService()
-    org = await org_service.get_organization_by_name(session, organization_name)    
+    orgs = await org_service.get_organization_by_name(session, organization_name)    
     
-    if not org:
+    if not orgs:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    return OrganizationOut(name=org['name'], phones=org['phones']) 
+    return [OrganizationOut(name=org['name'], phones=org['phones']) for org in orgs]
 
 
 @router.get("/organizations/nearby", response_model=list[OrganizationOut])
@@ -98,4 +98,3 @@ async def get_organizations_nearby(
         raise HTTPException(status_code=404, detail=f"В радиусе {radius_m}м нет ни одной организации")
     
     return [OrganizationOut(name=name, phones=phones) for name, phones in orgs]
-

@@ -19,3 +19,5 @@ __pycache__/
 alembic/versions/__pycache__/
 
 .pytest_cache
+
+AGENTS.md
