@@ -27,7 +27,18 @@ services:
       - "8000:8000"
     restart: always
     command: sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"
+  prometheus:
+    image: prom/prometheus:v3
+    container_name: organizations_prometheus
+    depends_on:
+      - app
+    ports:
+      - "9090:9090"
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
 
 volumes:
   postgres_data:
-
+  prometheus_data:
