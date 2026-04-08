@@ -9,49 +9,53 @@ class OrganizationRepo(BaseRepo[Organization]):
 
 
     async def get_organization_by_id_db(self, org_id: int):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
-                func.array_agg(OrganizationPhone.phone).label('phones')
+                phones_agg,
             )
-            .join(self.model_class.phones)
+            .outerjoin(self.model_class.phones)
             .where(self.model_class.id == org_id)
             .group_by(self.model_class.id, self.model_class.name)
         )
         return result.mappings().one_or_none()
 
     async def get_organization_by_name_db(self, name: str):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
-                func.array_agg(OrganizationPhone.phone).label('phones')
+                phones_agg
             )
-            .join(self.model_class.phones)
+            .outerjoin(self.model_class.phones)
             .where(self.model_class.name == name)
             .group_by(self.model_class.id, self.model_class.name)
         )
         return result.mappings().all()
 
     async def get_data_by_build_id_db(self, building_id: int):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         result = await self.session.execute(
             select(
                 self.model_class.name.label('name'),
-                func.array_agg(OrganizationPhone.phone).label('phones')
+                phones_agg
             )
-            .join(self.model_class.phones)
+            .outerjoin(self.model_class.phones)
             .where(self.model_class.building_id == building_id)
             .group_by(self.model_class.id, self.model_class.name)
         )
         return result.all()
     
     async def get_data_by_activity_id_db(self, activity_id: int):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         result = await self.session.execute(
             select(
                 self.model_class.name,
-                func.array_agg(OrganizationPhone.phone).label("phones") 
+                phones_agg
             )
             .join(self.model_class.activities)
-            .join(self.model_class.phones)
+            .outerjoin(self.model_class.phones)
             .where(Activity.id == activity_id)
             .group_by(self.model_class.id, self.model_class.name)
         )
@@ -59,6 +63,7 @@ class OrganizationRepo(BaseRepo[Organization]):
         return result.all()
     
     async def organizations_by_nested_activity_db(self, activity_id):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         activity_cte = (
             select(Activity.id)
             .where(Activity.id == activity_id)
@@ -75,10 +80,10 @@ class OrganizationRepo(BaseRepo[Organization]):
             select(
                 self.model_class.name.label('organization_name'),
                 Activity.name.label('activity_name'),
-                func.array_agg(OrganizationPhone.phone).label("phone"),
+                phones_agg,
             )
             .join(self.model_class.activities)
-            .join(self.model_class.phones)
+            .outerjoin(self.model_class.phones)
             .where(Activity.id.in_(select(activity_cte.c.id)))
             .group_by(self.model_class.id, self.model_class.name, Activity.name)
         )
@@ -93,13 +98,14 @@ class OrganizationRepo(BaseRepo[Organization]):
         building_point_geog,
         radius_m=settings.DEFAULT_RADIUS
     ):
+        phones_agg = func.array_remove(func.array_agg(OrganizationPhone.phone), None).label("phones")
         result = await self.session.execute(
                 select(
                     Organization.name.label("name"),
-                    func.array_agg(OrganizationPhone.phone).label("phones"),
+                    phones_agg,
                 )
                 .join(Organization.building)
-                .join(Organization.phones)
+                .outerjoin(Organization.phones)
                 .where(
                     Building.latitude.is_not(None),
                     Building.longitude.is_not(None),
