@@ -22,3 +22,5 @@ alembic/versions/__pycache__/
 
 AGENTS.md
 .codex
+
+alertmanager/smtp_password.txt

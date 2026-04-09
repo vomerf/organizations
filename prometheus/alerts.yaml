@@ -4,17 +4,33 @@ groups:
       - alert: OrganizationsApiDown
         expr: up{job="organizations-app"} == 0
         for: 1m
-        labels: 
+        labels:
           severity: critical
         annotations:
           summary: "organizations-app недоступен"
           description: "Prometheus не может собрать метрики с app:8000 уже 1 минуту"
 
-      - alert: OrganizationsApiHigh5xxRate
-        expr: sum(rate(http_requests_total{job="organizations-app", status=~"5.."}[5m])) > 0
-        for: 1m
+      - alert: OrganizationsApi5xxBurst
+        expr: sum(increase(http_requests_total{job="organizations-app", status=~"5.."}[5m])) >= 3
+        for: 2m
         labels:
           severity: warning
         annotations:
-          summary: "organizations-app возвращает 5xx"
-          description: "За последние 5 минут сервис начал отдавать ответы 5xx"
+          summary: "organizations-app начал часто отдавать 5xx"
+          description: "За последние 5 минут сервис вернул 3 или больше ответов 5xx"
+
+      - alert: OrganizationsApiHigh5xxRatio
+        expr: >
+          (
+            sum(increase(http_requests_total{job="organizations-app", status=~"5.."}[5m]))
+            /
+            sum(increase(http_requests_total{job="organizations-app"}[5m]))
+          ) >= 0.2
+          and
+          sum(increase(http_requests_total{job="organizations-app"}[5m])) >= 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "organizations-app отдаёт слишком много 5xx"
+          description: "За последние 5 минут доля 5xx достигла 20% и выше при общем трафике не меньше 10 запросов"

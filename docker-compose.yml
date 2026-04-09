@@ -48,7 +48,8 @@ services:
       - "9093:9093"
     restart: always
     volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/alertmanager.yaml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/smtp_password.txt:/etc/alertmanager/smtp_password.txt:ro
       - alertmanager_data:/alertmanager
 
   grafana:

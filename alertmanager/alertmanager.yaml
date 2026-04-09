@@ -1,0 +1,19 @@
+global:
+  smtp_smarthost: smtp.gmail.com:587
+  smtp_from: vomerff@gmail.com
+  smtp_auth_username: vomerff@gmail.com
+  smtp_auth_password_file: /etc/alertmanager/smtp_password.txt
+  smtp_require_tls: true
+
+route:
+  receiver: email-me
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: email-me
+    email_configs:
+      - to: vomerff@gmail.com
+        send_resolved: true
