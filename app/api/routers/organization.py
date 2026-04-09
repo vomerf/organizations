@@ -43,6 +43,7 @@ async def organizations_by_activity(
         for org_name, org_phones in orgs
     ]
 
+
 @router.get("/organizations_by_nested_activity", response_model=list[OrganizationActivityOut])
 async def get_organizations_by_nested_activity(activity_id: int, session: AsyncSession = Depends(get_session)):
     org_service = OrganizationService()
@@ -64,7 +65,7 @@ async def get_organization_by_id(
 ):
     org_service = OrganizationService()
     org = await org_service.get_organization_by_id(session, organization_id)    
-    
+
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
     return OrganizationOut(name=org['name'], phones=org['phones'])
@@ -77,7 +78,7 @@ async def get_organization_by_name(
 ):
     org_service = OrganizationService()
     orgs = await org_service.get_organization_by_name(session, organization_name)    
-    
+
     if not orgs:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
@@ -96,5 +97,10 @@ async def get_organizations_nearby(
 
     if not orgs:
         raise HTTPException(status_code=404, detail=f"В радиусе {radius_m}м нет ни одной организации")
-    
+
     return [OrganizationOut(name=name, phones=phones) for name, phones in orgs]
+
+
+@router.get("/debug/error")
+async def debug_error():
+    raise HTTPException(status_code=500, detail="Test 500 error")

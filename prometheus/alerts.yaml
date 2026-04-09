@@ -1,0 +1,20 @@
+groups:
+  - name: organizations
+    rules:
+      - alert: OrganizationsApiDown
+        expr: up{job="organizations-app"} == 0
+        for: 1m
+        labels: 
+          severity: critical
+        annotations:
+          summary: "organizations-app недоступен"
+          description: "Prometheus не может собрать метрики с app:8000 уже 1 минуту"
+
+      - alert: OrganizationsApiHigh5xxRate
+        expr: sum(rate(http_requests_total{job="organizations-app", status=~"5.."}[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "organizations-app возвращает 5xx"
+          description: "За последние 5 минут сервис начал отдавать ответы 5xx"
