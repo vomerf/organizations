@@ -99,8 +99,3 @@ async def get_organizations_nearby(
         raise HTTPException(status_code=404, detail=f"В радиусе {radius_m}м нет ни одной организации")
 
     return [OrganizationOut(name=name, phones=phones) for name, phones in orgs]
-
-
-@router.get("/debug/error")
-async def debug_error():
-    raise HTTPException(status_code=500, detail="Test 500 error")
