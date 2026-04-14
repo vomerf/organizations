@@ -27,7 +27,7 @@ groups:
           ) > 0.5
           and
           sum(increase(http_requests_total{job="organizations-app"}[5m])) >= 10
-        for: 30s # 5m можно заменить на 30s для более быстрой реакции на проблему
+        for: 5m # можно заменить на 30s для более быстрой реакции на проблему
         labels:
           severity: warning
         annotations:
